@@ -7,6 +7,7 @@ import About from "./pages/about";
 import LeaderBoard from "./pages/leaderBoard";
 import LiveContest from "./pages/liveContest";
 import Profile from "./pages/profile";
+import AuthPage from "./pages/AuthPage";
 
 export default function App() {
   return (
@@ -25,11 +26,12 @@ export default function App() {
             <Route path="/leaderboard" element={<LeaderBoard />} />
 
             {/* Contest Routes */}
-            <Route path="/live" element={<LiveContest />} />
+            <Route path="/liveContest" element={<LiveContest />} />
             <Route path="/browsecontests" element={<LiveContest />} />
 
             {/* User Routes */}
             <Route path="/profile" element={<Profile />} />
+            <Route path="/login" element={<AuthPage />} />
           </Routes>
         </div>
 

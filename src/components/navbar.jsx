@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import {
   Menu,
   X,
@@ -11,8 +11,10 @@ import {
   User,
   Info,
   Settings,
+  LogIn,
 } from "lucide-react";
 import NotificationComponent from "./Notification";
+import { useAuth } from "../context/AuthContext"; // Import auth context
 
 export default function Navbar() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -20,7 +22,11 @@ export default function Navbar() {
   const [isProfileAnimating, setIsProfileAnimating] = useState(false);
   const profileDropdownRef = useRef(null);
   const profileButtonRef = useRef(null);
-  const location = useLocation(); // Get current location
+  const location = useLocation();
+  const navigate = useNavigate();
+  
+  // Get auth state from context
+  const { user, logout, isAuthenticated } = useAuth();
 
   const toggleMenu = () => setIsMenuOpen(!isMenuOpen);
 
@@ -42,6 +48,12 @@ export default function Navbar() {
     }
   };
 
+  const handleLogout = () => {
+    logout();
+    setIsProfileOpen(false);
+    navigate("/");
+  };
+
   // Close profile dropdown when route changes
   useEffect(() => {
     if (isProfileOpen) {
@@ -53,7 +65,7 @@ export default function Navbar() {
     }
     // Also close mobile menu when route changes
     setIsMenuOpen(false);
-  }, [location.pathname]); // Listen to pathname changes
+  }, [location.pathname]);
 
   // Click outside handler
   useEffect(() => {
@@ -96,7 +108,6 @@ export default function Navbar() {
     <nav className="w-full bg-gradient-to-r from-purple-900 via-blue-900 to-indigo-900 shadow-2xl sticky top-0 z-50 backdrop-blur-sm border-b border-white/10">
       <div className="w-full max-w-none px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
-          {" "}
           {/* Logo and Brand */}
           <Link to="/" className="flex items-center space-x-2 flex-shrink-0">
             <div className="bg-gradient-to-br from-yellow-400 to-orange-500 p-2 rounded-lg shadow-lg">
@@ -111,6 +122,7 @@ export default function Navbar() {
               </span>
             </div>
           </Link>
+
           {/* Desktop Navigation - Show on screens 768px and above */}
           <div className="hidden md:flex items-center space-x-4 lg:space-x-8 flex-1 justify-center">
             <div className="flex items-center space-x-4 lg:space-x-6">
@@ -144,7 +156,8 @@ export default function Navbar() {
               </Link>
             </div>
           </div>
-          {/* Desktop Right Side - Search, Notifications, Profile */}
+
+          {/* Desktop Right Side - Search, Notifications, Login/Profile */}
           <div className="hidden md:flex items-center space-x-4 flex-shrink-0">
             {/* Search Bar */}
             <div className="relative hidden lg:block">
@@ -157,200 +170,216 @@ export default function Navbar() {
                 className="bg-white/10 border border-white/20 rounded-full py-2 pl-10 pr-4 text-white placeholder-gray-300 focus:outline-none focus:ring-2 focus:ring-yellow-400 focus:border-transparent backdrop-blur-sm transition-all duration-300 w-48 xl:w-64"
               />
             </div>
+            
             {/* Search Icon for medium screens */}
             <button className="lg:hidden p-2 text-white hover:text-yellow-300 transition-all duration-300 hover:scale-110 hover:bg-white/10 rounded-full">
               <Search className="h-5 w-5" />
-            </button>{" "}
-            {/* Notifications */}
-            <NotificationComponent className="z-50" />
-            {/* Enhanced Profile Dropdown */}
-            <div className="relative">
-              <button
-                ref={profileButtonRef}
-                onClick={toggleProfile}
-                className={`flex items-center space-x-2 text-white hover:text-yellow-300 transition-all duration-300 p-2 rounded-full hover:bg-white/10 focus:outline-none focus:ring-2 focus:ring-yellow-400/50 transform ${
-                  isProfileOpen ? "scale-110 bg-white/20" : "scale-100"
-                }`}
-                aria-expanded={isProfileOpen}
-                aria-haspopup="true"
+            </button>
+
+            {/* Notifications - only show if authenticated */}
+            {isAuthenticated() && <NotificationComponent className="z-50" />}
+
+            {/* Conditional Rendering: Login Button OR Profile Dropdown */}
+            {!isAuthenticated() ? (
+              /* Login Button for Unauthenticated Users */
+              <Link
+                to="/login"
+                className="flex items-center space-x-2 bg-gradient-to-r from-yellow-400 to-orange-500 text-white font-semibold px-4 py-2 rounded-full hover:from-yellow-500 hover:to-orange-600 transition-all duration-300 hover:scale-105 hover:shadow-lg transform"
               >
-                <div
-                  className={`bg-gradient-to-br from-pink-500 to-purple-600 p-1 rounded-full transform transition-all duration-300 ${
-                    isProfileOpen
-                      ? "rotate-12 scale-110 shadow-lg"
-                      : "rotate-0 scale-100"
+                <LogIn className="h-4 w-4" />
+                <span>Login</span>
+              </Link>
+            ) : (
+              /* Enhanced Profile Dropdown for Authenticated Users */
+              <div className="relative">
+                <button
+                  ref={profileButtonRef}
+                  onClick={toggleProfile}
+                  className={`flex items-center space-x-2 text-white hover:text-yellow-300 transition-all duration-300 p-2 rounded-full hover:bg-white/10 focus:outline-none focus:ring-2 focus:ring-yellow-400/50 transform ${
+                    isProfileOpen ? "scale-110 bg-white/20" : "scale-100"
                   }`}
+                  aria-expanded={isProfileOpen}
+                  aria-haspopup="true"
                 >
-                  <User className="h-4 w-4 text-white" />
-                </div>
-              </button>
-
-              {/* Enhanced Dropdown with Premium Animations */}
-              <div
-                ref={profileDropdownRef}
-                className={`absolute right-0 mt-3 w-56 backdrop-blur-xl bg-white/95 rounded-2xl shadow-2xl border border-white/30 py-3 z-50 overflow-hidden
-                  ${
-                    isProfileOpen
-                      ? "opacity-100 visible"
-                      : "opacity-0 invisible"
-                  }
-                `}
-                style={{
-                  transformOrigin: "top right",
-                  transform: isProfileOpen
-                    ? "scale(1) translateY(0) rotateX(0deg)"
-                    : isProfileAnimating
-                    ? "scale(0.95) translateY(-10px) rotateX(-5deg)"
-                    : "scale(0.8) translateY(-20px) rotateX(-15deg)",
-                  transition: "all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1)",
-                  filter: isProfileOpen ? "blur(0px)" : "blur(2px)",
-                }}
-              >
-                {/* Animated Background Gradient */}
-                <div className="absolute inset-0 bg-gradient-to-br from-purple-50/50 via-pink-50/30 to-blue-50/50 opacity-70"></div>
-
-                {/* Floating Particles Effect */}
-                <div className="absolute inset-0 overflow-hidden pointer-events-none">
                   <div
-                    className={`absolute top-2 right-4 w-1 h-1 bg-purple-400 rounded-full transition-all duration-1000 ${
-                      isProfileOpen ? "opacity-100 animate-pulse" : "opacity-0"
+                    className={`bg-gradient-to-br from-pink-500 to-purple-600 p-1 rounded-full transform transition-all duration-300 ${
+                      isProfileOpen
+                        ? "rotate-12 scale-110 shadow-lg"
+                        : "rotate-0 scale-100"
                     }`}
-                  ></div>
-                  <div
-                    className={`absolute top-6 left-6 w-1 h-1 bg-pink-400 rounded-full transition-all duration-1000 delay-200 ${
-                      isProfileOpen ? "opacity-100 animate-pulse" : "opacity-0"
-                    }`}
-                  ></div>
-                  <div
-                    className={`absolute bottom-4 right-8 w-1 h-1 bg-blue-400 rounded-full transition-all duration-1000 delay-400 ${
-                      isProfileOpen ? "opacity-100 animate-pulse" : "opacity-0"
-                    }`}
-                  ></div>
-                </div>
-
-                {/* Profile Header */}
-                <div
-                  className={`relative px-4 pb-3 border-b border-purple-200/50 transform transition-all duration-500 ${
-                    isProfileOpen
-                      ? "translate-y-0 opacity-100"
-                      : "translate-y-4 opacity-0"
-                  }`}
-                >
-                  <div className="flex items-center space-x-3">
-                    <div className="bg-gradient-to-br from-purple-500 to-pink-600 p-2 rounded-full shadow-lg">
-                      <User className="w-4 h-4 text-white" />
-                    </div>
-                    <div>
-                      <p className="font-semibold text-gray-800">John Doe</p>
-                      <p className="text-xs text-gray-600">Premium User</p>
-                    </div>
+                  >
+                    <User className="h-4 w-4 text-white" />
                   </div>
-                </div>
+                  <span className="hidden lg:inline font-medium">{user?.username || user?.name}</span>
+                </button>
 
-                {/* Menu Items with Staggered Animation */}
-                <div className="relative py-2">
-                  {" "}
-                  {[
-                    {
-                      to: "/profile",
-                      icon: User,
-                      label: "Profile",
-                      delay: 100,
-                    },
-                    {
-                      to: "/settings",
-                      icon: Settings,
-                      label: "Settings",
-                      delay: 150,
-                    },
-                    {
-                      to: "#",
-                      icon: Trophy,
-                      label: "My Contests",
-                      delay: 200,
-                    },
-                  ].map((item, index) => (
-                    <Link
-                      key={index}
-                      to={item.to}
-                      className={`relative block px-4 py-3 text-gray-800 hover:bg-gradient-to-r hover:from-purple-100 hover:to-pink-100 transition-all duration-300 group transform ${
-                        isProfileOpen
-                          ? "translate-x-0 opacity-100"
-                          : "translate-x-4 opacity-0"
+                {/* Enhanced Dropdown with Premium Animations */}
+                <div
+                  ref={profileDropdownRef}
+                  className={`absolute right-0 mt-3 w-56 backdrop-blur-xl bg-white/95 rounded-2xl shadow-2xl border border-white/30 py-3 z-50 overflow-hidden
+                    ${
+                      isProfileOpen
+                        ? "opacity-100 visible"
+                        : "opacity-0 invisible"
+                    }
+                  `}
+                  style={{
+                    transformOrigin: "top right",
+                    transform: isProfileOpen
+                      ? "scale(1) translateY(0) rotateX(0deg)"
+                      : isProfileAnimating
+                      ? "scale(0.95) translateY(-10px) rotateX(-5deg)"
+                      : "scale(0.8) translateY(-20px) rotateX(-15deg)",
+                    transition: "all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1)",
+                    filter: isProfileOpen ? "blur(0px)" : "blur(2px)",
+                  }}
+                >
+                  {/* Animated Background Gradient */}
+                  <div className="absolute inset-0 bg-gradient-to-br from-purple-50/50 via-pink-50/30 to-blue-50/50 opacity-70"></div>
+
+                  {/* Floating Particles Effect */}
+                  <div className="absolute inset-0 overflow-hidden pointer-events-none">
+                    <div
+                      className={`absolute top-2 right-4 w-1 h-1 bg-purple-400 rounded-full transition-all duration-1000 ${
+                        isProfileOpen ? "opacity-100 animate-pulse" : "opacity-0"
                       }`}
-                      style={{
-                        transitionDelay: isProfileOpen
-                          ? `${item.delay}ms`
-                          : "0ms",
-                      }}
-                    >
-                      <div className="flex items-center space-x-3">
-                        <div className="bg-gradient-to-br from-gray-200 to-gray-300 p-1.5 rounded-lg group-hover:from-purple-200 group-hover:to-pink-200 transition-all duration-300 group-hover:scale-110">
-                          <item.icon className="w-4 h-4 text-gray-600 group-hover:text-purple-600 transition-colors duration-300" />
-                        </div>
-                        <span className="font-medium group-hover:text-purple-700 transition-colors duration-300">
-                          {item.label}
-                        </span>
-                      </div>
-                      {/* Hover effect line */}
-                      <div className="absolute left-0 top-0 h-full w-1 bg-gradient-to-b from-purple-500 to-pink-500 transform scale-y-0 group-hover:scale-y-100 transition-transform duration-300 origin-center rounded-r"></div>{" "}
-                    </Link>
-                  ))}
-                </div>
-
-                {/* Divider with Animation */}
-                <div
-                  className={`mx-4 border-t border-gradient-to-r from-purple-200 to-pink-200 transition-all duration-500 ${
-                    isProfileOpen
-                      ? "opacity-100 scale-x-100"
-                      : "opacity-0 scale-x-0"
-                  }`}
-                  style={{ transitionDelay: isProfileOpen ? "300ms" : "0ms" }}
-                ></div>
-
-                {/* Sign Out Button */}
-                <a
-                  href="#"
-                  className={`relative block px-4 py-3 text-red-600 hover:bg-gradient-to-r hover:from-red-50 hover:to-pink-50 transition-all duration-300 group transform ${
-                    isProfileOpen
-                      ? "translate-x-0 opacity-100"
-                      : "translate-x-4 opacity-0"
-                  }`}
-                  style={{ transitionDelay: isProfileOpen ? "350ms" : "0ms" }}
-                >
-                  <div className="flex items-center space-x-3">
-                    <div className="bg-gradient-to-br from-red-100 to-red-200 p-1.5 rounded-lg group-hover:from-red-200 group-hover:to-red-300 transition-all duration-300 group-hover:scale-110">
-                      <X className="w-4 h-4 text-red-600 group-hover:rotate-90 transition-all duration-300" />
-                    </div>
-                    <span className="font-medium group-hover:text-red-700 transition-colors duration-300">
-                      Sign Out
-                    </span>
+                    ></div>
+                    <div
+                      className={`absolute top-6 left-6 w-1 h-1 bg-pink-400 rounded-full transition-all duration-1000 delay-200 ${
+                        isProfileOpen ? "opacity-100 animate-pulse" : "opacity-0"
+                      }`}
+                    ></div>
+                    <div
+                      className={`absolute bottom-4 right-8 w-1 h-1 bg-blue-400 rounded-full transition-all duration-1000 delay-400 ${
+                        isProfileOpen ? "opacity-100 animate-pulse" : "opacity-0"
+                      }`}
+                    ></div>
                   </div>
-                  {/* Hover effect line */}
-                  <div className="absolute left-0 top-0 h-full w-1 bg-gradient-to-b from-red-500 to-pink-500 transform scale-y-0 group-hover:scale-y-100 transition-transform duration-300 origin-center rounded-r"></div>
-                </a>
 
-                {/* Bottom Glow Effect */}
-                <div
-                  className={`absolute bottom-0 left-1/2 transform -translate-x-1/2 w-16 h-1 bg-gradient-to-r from-purple-400 to-pink-400 rounded-full transition-all duration-700 ${
-                    isProfileOpen
-                      ? "opacity-100 scale-x-100"
-                      : "opacity-0 scale-x-0"
-                  }`}
-                  style={{ transitionDelay: isProfileOpen ? "400ms" : "0ms" }}
-                ></div>
+                  {/* Profile Header */}
+                  <div
+                    className={`relative px-4 pb-3 border-b border-purple-200/50 transform transition-all duration-500 ${
+                      isProfileOpen
+                        ? "translate-y-0 opacity-100"
+                        : "translate-y-4 opacity-0"
+                    }`}
+                  >
+                    <div className="flex items-center space-x-3">
+                      <div className="bg-gradient-to-br from-purple-500 to-pink-600 p-2 rounded-full shadow-lg">
+                        <User className="w-4 h-4 text-white" />
+                      </div>
+                      <div>
+                        <p className="font-semibold text-gray-800">{user?.username || user?.name || "User"}</p>
+                        <p className="text-xs text-gray-600">{user?.email || "Premium User"}</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Menu Items with Staggered Animation */}
+                  <div className="relative py-2">
+                    {[
+                      {
+                        to: "/profile",
+                        icon: User,
+                        label: "Profile",
+                        delay: 100,
+                      },
+                      {
+                        to: "/settings",
+                        icon: Settings,
+                        label: "Settings",
+                        delay: 150,
+                      },
+                      {
+                        to: "/my-contests",
+                        icon: Trophy,
+                        label: "My Contests",
+                        delay: 200,
+                      },
+                    ].map((item, index) => (
+                      <Link
+                        key={index}
+                        to={item.to}
+                        className={`relative block px-4 py-3 text-gray-800 hover:bg-gradient-to-r hover:from-purple-100 hover:to-pink-100 transition-all duration-300 group transform ${
+                          isProfileOpen
+                            ? "translate-x-0 opacity-100"
+                            : "translate-x-4 opacity-0"
+                        }`}
+                        style={{
+                          transitionDelay: isProfileOpen
+                            ? `${item.delay}ms`
+                            : "0ms",
+                        }}
+                      >
+                        <div className="flex items-center space-x-3">
+                          <div className="bg-gradient-to-br from-gray-200 to-gray-300 p-1.5 rounded-lg group-hover:from-purple-200 group-hover:to-pink-200 transition-all duration-300 group-hover:scale-110">
+                            <item.icon className="w-4 h-4 text-gray-600 group-hover:text-purple-600 transition-colors duration-300" />
+                          </div>
+                          <span className="font-medium group-hover:text-purple-700 transition-colors duration-300">
+                            {item.label}
+                          </span>
+                        </div>
+                        {/* Hover effect line */}
+                        <div className="absolute left-0 top-0 h-full w-1 bg-gradient-to-b from-purple-500 to-pink-500 transform scale-y-0 group-hover:scale-y-100 transition-transform duration-300 origin-center rounded-r"></div>
+                      </Link>
+                    ))}
+                  </div>
+
+                  {/* Divider with Animation */}
+                  <div
+                    className={`mx-4 border-t border-gradient-to-r from-purple-200 to-pink-200 transition-all duration-500 ${
+                      isProfileOpen
+                        ? "opacity-100 scale-x-100"
+                        : "opacity-0 scale-x-0"
+                    }`}
+                    style={{ transitionDelay: isProfileOpen ? "300ms" : "0ms" }}
+                  ></div>
+
+                  {/* Sign Out Button */}
+                  <button
+                    onClick={handleLogout}
+                    className={`relative block w-full px-4 py-3 text-red-600 hover:bg-gradient-to-r hover:from-red-50 hover:to-pink-50 transition-all duration-300 group transform text-left ${
+                      isProfileOpen
+                        ? "translate-x-0 opacity-100"
+                        : "translate-x-4 opacity-0"
+                    }`}
+                    style={{ transitionDelay: isProfileOpen ? "350ms" : "0ms" }}
+                  >
+                    <div className="flex items-center space-x-3">
+                      <div className="bg-gradient-to-br from-red-100 to-red-200 p-1.5 rounded-lg group-hover:from-red-200 group-hover:to-red-300 transition-all duration-300 group-hover:scale-110">
+                        <X className="w-4 h-4 text-red-600 group-hover:rotate-90 transition-all duration-300" />
+                      </div>
+                      <span className="font-medium group-hover:text-red-700 transition-colors duration-300">
+                        Sign Out
+                      </span>
+                    </div>
+                    {/* Hover effect line */}
+                    <div className="absolute left-0 top-0 h-full w-1 bg-gradient-to-b from-red-500 to-pink-500 transform scale-y-0 group-hover:scale-y-100 transition-transform duration-300 origin-center rounded-r"></div>
+                  </button>
+
+                  {/* Bottom Glow Effect */}
+                  <div
+                    className={`absolute bottom-0 left-1/2 transform -translate-x-1/2 w-16 h-1 bg-gradient-to-r from-purple-400 to-pink-400 rounded-full transition-all duration-700 ${
+                      isProfileOpen
+                        ? "opacity-100 scale-x-100"
+                        : "opacity-0 scale-x-0"
+                    }`}
+                    style={{ transitionDelay: isProfileOpen ? "400ms" : "0ms" }}
+                  ></div>
+                </div>
               </div>
-            </div>
+            )}
           </div>
-          {/* Mobile menu button - Show only on screens below 768px */}{" "}
+
+          {/* Mobile menu button - Show only on screens below 768px */}
           <div className="md:hidden flex items-center space-x-2">
             {/* Mobile Search Icon */}
             <button className="p-2 text-white hover:text-yellow-300 transition-all duration-300 hover:scale-110 rounded-lg hover:bg-white/10">
               <Search className="h-5 w-5" />
             </button>
 
-            {/* Mobile Notifications */}
-            <NotificationComponent className="z-50" />
+            {/* Mobile Notifications - only show if authenticated */}
+            {isAuthenticated() && <NotificationComponent className="z-50" />}
 
             {/* Mobile Menu Toggle with Enhanced Animation */}
             <button
@@ -412,7 +441,8 @@ export default function Navbar() {
                 placeholder="Search contests..."
                 className="w-full bg-white/10 border border-white/20 rounded-full py-2 pl-10 pr-4 text-white placeholder-gray-300 focus:outline-none focus:ring-2 focus:ring-yellow-400 focus:border-transparent backdrop-blur-sm transition-all duration-300 focus:scale-105"
               />
-            </div>{" "}
+            </div>
+
             {/* Menu Items with Staggered Animation */}
             <Link
               to="/live"
@@ -462,41 +492,78 @@ export default function Navbar() {
               <Info className="h-5 w-5" />
               <span className="font-medium">About Us</span>
             </Link>
-            {/* Notifications Button with Animation */}
-            <button
-              className={`flex items-center space-x-3 text-white hover:text-yellow-300 transition-all duration-500 px-4 py-3 rounded-lg hover:bg-white/10 w-full hover:scale-105 active:scale-95 transform ${
-                isMenuOpen
-                  ? "translate-x-0 opacity-100"
-                  : "-translate-x-8 opacity-0"
-              }`}
-              style={{ transitionDelay: isMenuOpen ? "600ms" : "0ms" }}
-            >
-              <Bell className="h-5 w-5" />
-              <span className="font-medium">Notifications</span>
-              <span className="bg-red-500 text-white text-xs rounded-full px-2 py-1 ml-auto animate-pulse">
-                3
-              </span>
-            </button>
-            {/* Divider with Animation */}
-            <hr
-              className={`border-white/20 my-4 transition-all duration-500 ${
-                isMenuOpen ? "opacity-100 scale-x-100" : "opacity-0 scale-x-0"
-              }`}
-              style={{ transitionDelay: isMenuOpen ? "700ms" : "0ms" }}
-            />
-            {/* Profile Button with Animation */}
-            <Link
-              to="/profile"
-              className={`flex items-center space-x-3 text-white hover:text-yellow-300 transition-all duration-500 px-4 py-3 rounded-lg hover:bg-white/10 w-full hover:scale-105 active:scale-95 transform ${
-                isMenuOpen
-                  ? "translate-x-0 opacity-100"
-                  : "-translate-x-8 opacity-0"
-              }`}
-              style={{ transitionDelay: isMenuOpen ? "800ms" : "0ms" }}
-            >
-              <User className="h-5 w-5" />
-              <span className="font-medium">Profile</span>
-            </Link>
+
+            {/* Conditional Mobile Menu Items */}
+            {!isAuthenticated() ? (
+              /* Mobile Login Button */
+              <Link
+                to="/login"
+                className={`flex items-center space-x-3 text-white hover:text-yellow-300 transition-all duration-500 px-4 py-3 rounded-lg hover:bg-white/10 hover:scale-105 active:scale-95 transform ${
+                  isMenuOpen
+                    ? "translate-x-0 opacity-100"
+                    : "-translate-x-8 opacity-0"
+                }`}
+                style={{ transitionDelay: isMenuOpen ? "600ms" : "0ms" }}
+              >
+                <LogIn className="h-5 w-5" />
+                <span className="font-medium">Login</span>
+              </Link>
+            ) : (
+              /* Mobile Authenticated User Options */
+              <>
+                {/* Notifications Button with Animation */}
+                <button
+                  className={`flex items-center space-x-3 text-white hover:text-yellow-300 transition-all duration-500 px-4 py-3 rounded-lg hover:bg-white/10 w-full hover:scale-105 active:scale-95 transform ${
+                    isMenuOpen
+                      ? "translate-x-0 opacity-100"
+                      : "-translate-x-8 opacity-0"
+                  }`}
+                  style={{ transitionDelay: isMenuOpen ? "600ms" : "0ms" }}
+                >
+                  <Bell className="h-5 w-5" />
+                  <span className="font-medium">Notifications</span>
+                  <span className="bg-red-500 text-white text-xs rounded-full px-2 py-1 ml-auto animate-pulse">
+                    3
+                  </span>
+                </button>
+                
+                {/* Divider with Animation */}
+                <hr
+                  className={`border-white/20 my-4 transition-all duration-500 ${
+                    isMenuOpen ? "opacity-100 scale-x-100" : "opacity-0 scale-x-0"
+                  }`}
+                  style={{ transitionDelay: isMenuOpen ? "700ms" : "0ms" }}
+                />
+                
+                {/* Profile Button with Animation */}
+                <Link
+                  to="/profile"
+                  className={`flex items-center space-x-3 text-white hover:text-yellow-300 transition-all duration-500 px-4 py-3 rounded-lg hover:bg-white/10 w-full hover:scale-105 active:scale-95 transform ${
+                    isMenuOpen
+                      ? "translate-x-0 opacity-100"
+                      : "-translate-x-8 opacity-0"
+                  }`}
+                  style={{ transitionDelay: isMenuOpen ? "800ms" : "0ms" }}
+                >
+                  <User className="h-5 w-5" />
+                  <span className="font-medium">Profile</span>
+                </Link>
+
+                {/* Mobile Logout Button */}
+                <button
+                  onClick={handleLogout}
+                  className={`flex items-center space-x-3 text-red-400 hover:text-red-300 transition-all duration-500 px-4 py-3 rounded-lg hover:bg-white/10 w-full hover:scale-105 active:scale-95 transform ${
+                    isMenuOpen
+                      ? "translate-x-0 opacity-100"
+                      : "-translate-x-8 opacity-0"
+                  }`}
+                  style={{ transitionDelay: isMenuOpen ? "900ms" : "0ms" }}
+                >
+                  <X className="h-5 w-5" />
+                  <span className="font-medium">Logout</span>
+                </button>
+              </>
+            )}
           </div>
         </div>
       </div>
