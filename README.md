@@ -139,6 +139,45 @@ Contest_tracker/
 - Helmet and CORS for security
 - Input validation and rate limiting
 
+## Dependencies
+
+### Backend
+
+- express
+- cors
+- dotenv
+- bcryptjs
+- jsonwebtoken
+- express-rate-limit
+- express-validator
+- helmet
+- mysql2
+- nodemon (dev)
+
+Install all backend dependencies with:
+
+```bash
+npm install express cors dotenv bcryptjs jsonwebtoken express-rate-limit express-validator helmet mysql2
+npm install --save-dev nodemon
+```
+
+### Frontend
+
+- react
+- react-dom
+- react-router-dom
+- vite
+- tailwindcss
+- lucide-react (icons)
+- eslint (dev)
+
+Install all frontend dependencies with:
+
+```bash
+npm install react react-dom react-router-dom tailwindcss lucide-react
+npm install --save-dev vite eslint
+```
+
 ## License
 
 This project is licensed under the MIT License.
